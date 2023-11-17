@@ -35,7 +35,7 @@ def explore():
     ib.connect("127.0.0.1", 7497, clientId=0)  # Connect to TWS or Gateway
 
     # options definitions - exchange and currecny are constant
-    symbol = "SPY"
+    symbol = "TSLA"
     exchange = "SMART"
     currency = "USD"
     exp_date = "20231124"
@@ -45,6 +45,7 @@ def explore():
 
     # getting the latest market data and full contract details of the stock
     stock_pr = ib.reqMktData(under_stock)
+    ib.sleep(2)
     latest_stock_pr = stock_pr.last
     print("last price for {} : \n{}\n".format(symbol, latest_stock_pr))
 
@@ -79,8 +80,7 @@ def explore():
                                  lastTradeDateOrContractMonth=exp_date,
                                  strike=opt_strike,
                                  right=right,
-                                 exchange=exchange,
-                                 tradingClass='SPY')
+                                 exchange=exchange)  # tradingClass='SPY'
                           for right in ['P', 'C']
                           for opt_strike in closest_strikes]
 
@@ -104,17 +104,13 @@ def explore():
         contract_dict['contract_obj'] = complete_con
         good_opts_df = pd.concat([good_opts_df, pd.DataFrame([contract_dict])], ignore_index=True)
 
-    print(good_opts_df)
-
     # selecting the call option that has the closest possible strike to desired strike
     call_df = good_opts_df.loc[good_opts_df.right == 'C']
     call_df['abs_difference'] = (call_df['strike'] - call_strike).abs()
     call_df_sorted = call_df.sort_values(by=['abs_difference']).reset_index(drop=True)
-    print(call_df_sorted[['abs_difference', 'strike']])
 
     selected_call = call_df_sorted['contract_obj'].iloc[1]
     print('selected call strike : {} | desired strike : {}'.format(selected_call.strike, call_strike))
-    print(selected_call)
 
     # selecting the put option that has the closest possible strike to desired strike
     put_df = good_opts_df.loc[good_opts_df.right == 'P']
@@ -125,7 +121,6 @@ def explore():
 
     selected_put = put_df_sorted['contract_obj'].iloc[1]
     print('selected put strike : {} | desired strike : {}'.format(selected_put.strike, put_strike))
-    print(selected_put)
 
     # Defining market order objects. need to define separate objects for each order
     call_order = MarketOrder(action='buy', totalQuantity=1, tif='GTC')
